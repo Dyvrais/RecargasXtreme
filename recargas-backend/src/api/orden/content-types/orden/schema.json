@@ -1,0 +1,32 @@
+{
+  "kind": "collectionType",
+  "collectionName": "ordens",
+  "info": {
+    "singularName": "orden",
+    "pluralName": "ordens",
+    "displayName": "Orden"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "Telefono": {
+      "type": "biginteger"
+    },
+    "Referencia": {
+      "type": "biginteger"
+    },
+    "CarritoJSON": {
+      "type": "json"
+    },
+    "Estado": {
+      "type": "enumeration",
+      "enum": [
+        "cancelado",
+        "entregado",
+        "pendiente"
+      ]
+    }
+  }
+}
