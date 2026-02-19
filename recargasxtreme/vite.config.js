@@ -11,4 +11,12 @@ export default defineConfig({
       },
     }),
   ],
+  server: {
+    host: "0.0.0.0",
+    hmr: {
+      host: "97gvckfk-5173.use2.devtunnels.ms",
+      port: 5173,
+      protocol: "wss",
+    },
+  },
 });
