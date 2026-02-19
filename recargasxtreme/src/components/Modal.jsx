@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { FaRegCopy } from "react-icons/fa";
+import { FaCheck } from "react-icons/fa";
 
 const Modal = ({ isOpen, onClose, itemId }) => {
   const [data, setData] = useState(null);
@@ -7,6 +9,57 @@ const Modal = ({ isOpen, onClose, itemId }) => {
 
   const [DolarParalelo, setDolarParalelo] = useState("");
   const [Dolar, setDolar] = useState("");
+  const [selectedOptionId, setSelectedOptionId] = useState(null);
+  const [userIdVal, setUserIdVal] = useState("");
+  const [emailVal, setEmailVal] = useState("");
+  const [passwordVal, setPasswordVal] = useState("");
+  const [telefono, setTelefono] = useState("");
+  const [loginMethod, setLoginMethod] = useState("-");
+  const [paymentMethod, setPaymentMethod] = useState("pago-movil");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [copyMessage, setCopyMessage] = useState("");
+
+  const paymentListRef = useRef(null);
+
+  const copyToClipboard = async (text) => {
+    try {
+      if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        setCopyMessage("Copiado al portapapeles");
+        setTimeout(() => setCopyMessage(""), 1500);
+        return;
+      }
+    } catch (e) {
+      // fallthrough to fallback
+    }
+
+    try {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.left = "-9999px";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      setCopyMessage("Copiado al portapapeles");
+      setTimeout(() => setCopyMessage(""), 2000);
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  const handleCopy = async (text) => {
+    if (!text) return;
+    await copyToClipboard(text);
+  };
+
+  const handleCopyAll = async () => {
+    const text = paymentListRef.current?.innerText?.trim() || "";
+    if (!text) return;
+    await copyToClipboard(text);
+  };
+
   useEffect(() => {
     fetch("https://ve.dolarapi.com/v1/dolares")
       .then((response) => response.json())
@@ -72,7 +125,7 @@ const Modal = ({ isOpen, onClose, itemId }) => {
       onClick={onClose}
     >
       <div
-        className="bg-gray-800 relative opacity-100 p-6 rounded-lg shadow-lg w-80"
+        className="bg-gray-800 relative opacity-100 p-6 rounded-lg shadow-lg w-80 overflow-y-auto max-h-[80vh]"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -95,12 +148,12 @@ const Modal = ({ isOpen, onClose, itemId }) => {
                 fill="#145cfa"
               />
             </svg>
-            <span class="sr-only">Loading...</span>
+            <span className="sr-only">Loading...</span>
           </div>
         ) : error ? (
           <div style={{ color: "red" }}>
-            <h2>Oops!</h2>
-            <p>{error}</p>
+            <h2 className="font-bold">Oops!</h2>
+            <p className="font-bold">{error}</p>
           </div>
         ) : data && data.data && data.data.length > 0 ? (
           <>
@@ -110,72 +163,347 @@ const Modal = ({ isOpen, onClose, itemId }) => {
             >
               &times;
             </button>
-            <div>
-              <h2>{data.data[0].product?.Nombre || "Producto"}</h2>
+            <div className="text-sm">
+              <h2 className="font-bold mb-2">
+                {data.data[0].product?.Nombre || "Producto"}
+              </h2>
+
               <div className="my-2 grid grid-cols-2 gap-4 ">
-                {data.data.map((opcion) => (
-                  <div
-                    key={opcion.id}
-                    className="border rounded-lg text-sm p-2 bg-gray-700 text-white"
-                  >
-                    <p>{opcion.TipoCoin} </p>
-                    <p>
-                      {Math.trunc(opcion.Precio * DolarParalelo * 100) / 100}{" "}
-                      Bs.
-                    </p>
-                  </div>
-                ))}
+                {data.data.map((opcion) => {
+                  const bsPrice =
+                    Math.trunc(opcion.Precio * DolarParalelo * 100) / 100;
+                  const selected = selectedOptionId === opcion.id;
+                  return (
+                    <button
+                      key={opcion.id}
+                      type="button"
+                      onClick={() => setSelectedOptionId(opcion.id)}
+                      className={`border rounded-lg text-sm p-2 text-left ${selected ? "bg-yellow-400 text-black" : "bg-gray-700 text-white"}`}
+                    >
+                      <p className="font-semibold">{opcion.TipoCoin}</p>
+                      <p>{bsPrice} Bs.</p>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            <form className="flex flex-col gap-2 my-4">
-              <label htmlFor="id" className="text-sm text-white">
-                ID/Cuenta usuario:
-              </label>
-              <input
-                type="text"
-                id="id"
-                name="id"
-                className="p-2 rounded-lg bg-gray-700 text-white"
-              />
-              <label htmlFor="email" className="text-sm text-white">
-                Correo electrónico:
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                className="p-2 rounded-lg bg-gray-700 text-white"
-              />
-              <label htmlFor="phone" className="text-sm text-white">
-                Número de teléfono:
-              </label>
-              <input
-                type="tel"
-                id="phone"
-                name="phone"
-                className="p-2 rounded-lg bg-gray-700 text-white"
-              />
+            <form
+              className="flex flex-col gap-2 my-4"
+              onSubmit={(e) => e.preventDefault()}
+            >
+              {/* FREE FIRE IF OPERATION */}
+              {data.data[0].product?.Nombre == "Free Fire" && (
+                <>
+                  <label htmlFor="id" className="text-sm text-white">
+                    ID de jugador:
+                  </label>
+                  <input
+                    value={userIdVal}
+                    onChange={(e) => setUserIdVal(e.target.value)}
+                    type="text"
+                    id="id"
+                    name="id"
+                    className="p-2 rounded-lg bg-gray-700 text-white"
+                    placeholder="Ingresa tu ID"
+                  />
+                  <label className="block text-sm text-white">
+                    Teléfono de contacto (WhatsApp):
+                  </label>
+                  <input
+                    type="tel"
+                    value={telefono}
+                    onChange={(e) => setTelefono(e.target.value)}
+                    className="w-full p-2 rounded bg-gray-700 text-white"
+                    placeholder="Ingresa tu teléfono"
+                    required
+                  />
+                </>
+              )}
+
+              {/* ROBLOX IF OPERATION */}
+              {data.data[0].product?.Nombre == "Roblox" && (
+                <>
+                  <label htmlFor="datos-cuenta" className="text-sm text-white">
+                    Datos de cuenta:
+                  </label>
+                  <input
+                    value={userIdVal}
+                    onChange={(e) => setUserIdVal(e.target.value)}
+                    type="text"
+                    id="id"
+                    name="id"
+                    className="p-2 rounded-lg bg-gray-700 text-white"
+                    placeholder="ID de la cuenta"
+                  />
+                  <input
+                    value={emailVal}
+                    onChange={(e) => setEmailVal(e.target.value)}
+                    type="email"
+                    id="email"
+                    name="email"
+                    className="p-2 rounded-lg bg-gray-700 text-white"
+                    placeholder="Correo electrónico de la cuenta"
+                  />
+                  <input
+                    value={passwordVal}
+                    onChange={(e) => setPasswordVal(e.target.value)}
+                    type="password"
+                    id="password"
+                    name="password"
+                    className="p-2 rounded-lg bg-gray-700 text-white"
+                    placeholder="Contraseña de la cuenta"
+                  />
+
+                  <label className="block text-sm text-white">
+                    Teléfono de contacto (WhatsApp):
+                  </label>
+                  <input
+                    type="tel"
+                    value={telefono}
+                    onChange={(e) => setTelefono(e.target.value)}
+                    className="w-full p-2 rounded bg-gray-700 text-white"
+                    placeholder="Ingresa tu teléfono"
+                    required
+                  />
+                </>
+              )}
+
+              {/* BLOOD STRIKE IF OPERATION */}
+              {data.data[0].product?.Nombre == "Blood Strike" && (
+                <>
+                  <label htmlFor="id" className="text-sm text-white">
+                    ID de jugador:
+                  </label>
+                  <input
+                    value={userIdVal}
+                    onChange={(e) => setUserIdVal(e.target.value)}
+                    type="text"
+                    id="id"
+                    name="id"
+                    className="p-2 rounded-lg bg-gray-700 text-white"
+                    placeholder="Ingresa tu ID"
+                  />
+                  <label className="block text-sm text-white">
+                    Teléfono de contacto (WhatsApp):
+                  </label>
+                  <input
+                    type="tel"
+                    value={telefono}
+                    onChange={(e) => setTelefono(e.target.value)}
+                    className="w-full p-2 rounded bg-gray-700 text-white"
+                    placeholder="Ingresa tu teléfono"
+                    required
+                  />
+                </>
+              )}
+
+              {/* COD MOBILE IF OPERATION */}
+              {data.data[0].product?.Nombre == "COD Mobile" && (
+                <>
+                  <label htmlFor="datos-cuenta" className="text-sm text-white">
+                    Datos de cuenta:
+                  </label>
+                  <input
+                    value={emailVal}
+                    onChange={(e) => setEmailVal(e.target.value)}
+                    type="email"
+                    id="email"
+                    name="email"
+                    className="p-2 rounded-lg bg-gray-700 text-white"
+                    placeholder="Correo electrónico de la cuenta"
+                  />
+                  <input
+                    value={passwordVal}
+                    onChange={(e) => setPasswordVal(e.target.value)}
+                    type="password"
+                    id="password"
+                    name="password"
+                    className="p-2 rounded-lg bg-gray-700 text-white"
+                    placeholder="Contraseña de la cuenta"
+                  />
+                  <label htmlFor="iniciosesion" className="text-sm text-white">
+                    Metodo de inicio de sesión:
+                  </label>
+                  <select
+                    id="iniciosesion"
+                    name="iniciosesion"
+                    value={loginMethod}
+                    onChange={(e) => setLoginMethod(e.target.value)}
+                    className="p-2 rounded-lg bg-gray-700 text-white"
+                  >
+                    <option value="facebook">Facebook</option>
+                    <option value="google">Google</option>
+                    <option value="activision">Activision</option>
+                  </select>
+                  <label className="block text-sm text-white">
+                    Teléfono de contacto (WhatsApp):
+                  </label>
+                  <input
+                    type="tel"
+                    value={telefono}
+                    onChange={(e) => setTelefono(e.target.value)}
+                    className="w-full p-2 rounded bg-gray-700 text-white"
+                    placeholder="Ingresa tu teléfono"
+                    required
+                  />
+                </>
+              )}
               <label htmlFor="payment" className="text-sm text-white">
                 Método de pago:
               </label>
               <select
                 id="payment"
                 name="payment"
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
                 className="p-2 rounded-lg bg-gray-700 text-white"
               >
                 <option value="pago-movil">Pago movil</option>
-                <option value="zinli">Zinli</option>
+                {/* <option value="zinli">Zinli</option>
                 <option value="binance">Binance</option>
-                <option value="kontigo">Kontigo</option>
+                <option value="kontigo">Kontigo</option> */}
               </select>
             </form>
-            <button
-              id="cart"
-              className="bg-yellow-500 py-1 px-2 rounded-lg text-black"
-            >
-              Añadir al carrito
-            </button>
+
+            {/* Payment details placeholder per method */}
+            <div className="text-sm bg-gray-700 text-white p-3 rounded-lg mb-3">
+              {paymentMethod === "pago-movil" && (
+                <ul ref={paymentListRef} className="list-none space-y-2">
+                  <li className="font-semibold">Pago Móvil</li>
+                  <li className="flex items-center justify-between">
+                    <span>Banco: Banco Plaza</span>
+                    <button
+                      className="text-sm bg-gray-600 px-2 py-1 rounded"
+                      onClick={() => handleCopy("Banco Plaza")}
+                    >
+                      <FaRegCopy />
+                    </button>
+                  </li>
+                  <li className="flex items-center justify-between">
+                    <span>Cedula: 26.551.722</span>
+                    <button
+                      className="text-sm bg-gray-600 px-2 py-1 rounded"
+                      onClick={() => handleCopy("26.551.722")}
+                    >
+                      <FaRegCopy />
+                    </button>
+                  </li>
+                  <li className="flex items-center justify-between">
+                    <span>Telefono: 0412-6310088</span>
+                    <button
+                      className="text-sm bg-gray-600 px-2 py-1 rounded"
+                      onClick={() => handleCopy("04126310088")}
+                    >
+                      <FaRegCopy />
+                    </button>
+                  </li>
+                  <button
+                    onClick={handleCopyAll}
+                    className="mt-2 m-auto flex items-center gap-1 text-md bg-gray-600 px-2 py-1 rounded"
+                  >
+                    <FaRegCopy />
+                    <span className="ml-2">Copiar todo</span>
+                  </button>
+                </ul>
+              )}
+              {copyMessage && (
+                <div className="my-2 m-auto bg-green-600 text-white text-center p-2 w-fit rounded-full flex items-center gap-2">
+                  <FaCheck className="text-sm" />
+                  <span>{copyMessage}</span>
+                </div>
+              )}
+              {/* {paymentMethod === "zinli" && (
+                <div>
+                  <h4 className="font-semibold">Zinli</h4>
+                  <p>ID Zinli: zinli_user_123</p>
+                  <p>Email: pagos@zinli.example</p>
+                  <p>Banco asociado: Zinli Bank</p>
+                  <p>Referencia: ZIN-REF-5678</p>
+                </div>
+              )}
+              {paymentMethod === "binance" && (
+                <div>
+                  <h4 className="font-semibold">Binance</h4>
+                  <p>Wallet: 0xABCDEF0123456789</p>
+                  <p>Etiqueta/Memo: 987654321</p>
+                  <p>Moneda: USDT TRC20</p>
+                  <p>Referencia: BIN-REF-9012</p>
+                </div>
+              )}
+              {paymentMethod === "kontigo" && (
+                <div>
+                  <h4 className="font-semibold">Kontigo</h4>
+                  <p>ID Comercio: KONT-0001</p>
+                  <p>Número: 555-1234</p>
+                  <p>Contacto: ventas@kontigo.example</p>
+                  <p>Referencia: KON-REF-3456</p>
+                </div>
+              )} */}
+            </div>
+
+            <div className="flex flex-col items-center gap-2">
+              <button
+                id="cart"
+                onClick={() => {
+                  const opcion = data.data.find(
+                    (o) => o.id === selectedOptionId,
+                  );
+                  if (!opcion) {
+                    setError(
+                      "Seleccione una opción antes de añadir al carrito.",
+                    );
+                    return;
+                  }
+                  const productName = data.data[0].product?.Nombre || "";
+                  const cartItem = {
+                    IDProducto: itemId,
+                    NombreProducto: productName,
+                    IDCoin: opcion.id,
+                    CoinSeleccionada: opcion.TipoCoin,
+                    PrecioDolares: opcion.Precio,
+                    PrecioBolivares:
+                      Math.trunc(opcion.Precio * DolarParalelo * 100) / 100,
+                    IDdelUsuario: userIdVal,
+                    CorreoCuenta: emailVal,
+                    ContraseñaCuenta: passwordVal,
+                    MetodoInicioSesion: loginMethod,
+                    MetodoPago: paymentMethod,
+                    FechaAgregado: new Date().toISOString(),
+                  };
+
+                  try {
+                    const existing = JSON.parse(
+                      localStorage.getItem("cart") || "[]",
+                    );
+                    existing.push(cartItem);
+                    localStorage.setItem("cart", JSON.stringify(existing));
+                    setSuccessMessage("Añadido al carrito");
+                    setError(null);
+                    // optional: clear form or close modal
+
+                    setTimeout(() => {
+                      setSuccessMessage("");
+                      onClose();
+                    }, 1500);
+                    setTelefono("");
+                    setEmailVal("");
+                    setPasswordVal("");
+                    setUserIdVal("");
+                  } catch (e) {
+                    setError("No se pudo guardar el carrito.");
+                  }
+                }}
+                className="bg-yellow-500 py-1 px-2 rounded-lg text-black"
+              >
+                Añadir al carrito
+              </button>
+              {successMessage && (
+                <span className="w-full text-center text-white bg-green-500 px-2 py-1 rounded">
+                  {successMessage}
+                </span>
+              )}
+            </div>
           </>
         ) : (
           <p>No hay opciones disponibles para este producto.</p>

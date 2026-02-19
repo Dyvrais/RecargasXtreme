@@ -430,6 +430,34 @@ export interface AdminUser extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiGaleriaGaleria extends Struct.CollectionTypeSchema {
+  collectionName: 'galerias';
+  info: {
+    displayName: 'Galeria';
+    pluralName: 'galerias';
+    singularName: 'galeria';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    imagencarrusel: Schema.Attribute.Media<'images', true>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::galeria.galeria'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiOpcionOpcion extends Struct.CollectionTypeSchema {
   collectionName: 'opcions';
   info: {
@@ -476,7 +504,7 @@ export interface ApiOrdenOrden extends Struct.CollectionTypeSchema {
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     Estado: Schema.Attribute.Enumeration<
-      ['cancelado', 'entregado', 'pendiente']
+      ['PENDIENTE', 'ENTREGADO', 'CANCELADO']
     >;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<'oneToMany', 'api::orden.orden'> &
@@ -515,6 +543,9 @@ export interface ApiProductProduct extends Struct.CollectionTypeSchema {
       'api::product.product'
     > &
       Schema.Attribute.Private;
+    metodoiniciosesion: Schema.Attribute.Enumeration<
+      ['Facebook', 'Google', 'Activision']
+    >;
     Nombre: Schema.Attribute.String;
     opcions: Schema.Attribute.Relation<'oneToMany', 'api::opcion.opcion'>;
     Precio: Schema.Attribute.Decimal;
@@ -1036,6 +1067,7 @@ declare module '@strapi/strapi' {
       'admin::transfer-token': AdminTransferToken;
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
+      'api::galeria.galeria': ApiGaleriaGaleria;
       'api::opcion.opcion': ApiOpcionOpcion;
       'api::orden.orden': ApiOrdenOrden;
       'api::product.product': ApiProductProduct;

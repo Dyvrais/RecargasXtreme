@@ -4,7 +4,7 @@ import { useState } from "react";
 import { IoCartOutline } from "react-icons/io5";
 import { IoIosMenu, IoMdClose } from "react-icons/io";
 
-export default function Navbar() {
+export default function Navbar({ onCartClick }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -56,13 +56,13 @@ export default function Navbar() {
               </li>
             </ul>
 
-            <a
-              href=""
-              target="_blank"
+            <button
+              aria-label="View cart"
+              onClick={onCartClick}
               className="inline-flex items-center px-3 py-2 rounded-md transition-transform"
             >
               <IoCartOutline className="text-yellow-500 text-xl font-bold" />
-            </a>
+            </button>
           </div>
         </div>
 

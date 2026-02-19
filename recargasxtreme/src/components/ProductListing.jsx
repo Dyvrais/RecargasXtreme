@@ -5,15 +5,17 @@ export default function Products() {
   const [products, setProducts] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeId, setActiveId] = useState(null);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const handleOpenModal = (id) => {
-    setActiveId(id); // Set the ID first
-    setIsModalOpen(true); // Then open the modal
+    setActiveId(id);
+    setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
-    setIsModalOpen(false); // Close the modal
-    setActiveId(null); // Clear the ID (optional, but good practice)
+    setIsModalOpen(false);
+    setActiveId(null);
   };
 
   useEffect(() => {
@@ -25,6 +27,12 @@ export default function Products() {
       })
       .catch((err) => console.error("Products fetch error:", err));
   }, []);
+
+  // Debounce search input to avoid filtering on every keystroke
+  useEffect(() => {
+    const handle = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(handle);
+  }, [search]);
 
   if (!products.length)
     return (
@@ -60,29 +68,48 @@ export default function Products() {
 
       <input
         type="search"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
         className="w-[80%] max-w-md p-2 border border-gray-300 rounded-lg mb-4"
-        placeholder="🔍 Buscar juegos..."
-      ></input>
-      <div className="grid grid-cols-2 gap-4 place-items-center justify-center rounded-lg items-center md:grid-cols-4">
-        {products.map((product) => {
+        placeholder="🔍 Buscar productos..."
+      />
+
+      {/* Filtered list based on search (case-insensitive) */}
+      {products.filter &&
+        (() => {
+          const q = debouncedSearch.trim().toLowerCase();
+          const filtered = q
+            ? products.filter((p) => (p.Nombre || "").toLowerCase().includes(q))
+            : products;
+
           return (
-            <button
-              onClick={() => handleOpenModal(product.id)}
-              className="bg-gray-800 rounded-lg"
-              key={product.id}
-            >
-              <img
-                src={`${import.meta.env.VITE_API_URL}${product.Imagen[0].url}`}
-                className="size-30 rounded-t-lg object-cover"
-                alt={product.Nombre || ""}
-              />
-              <h3 className="text-white text-md font-Noto text-center py-2">
-                {product.Nombre || "Nombre indefinido"}
-              </h3>
-            </button>
+            <div className="grid grid-cols-2 gap-4 place-items-center justify-center rounded-lg items-center md:grid-cols-4">
+              {filtered.length ? (
+                filtered.map((product) => (
+                  <button
+                    onClick={() => handleOpenModal(product.id)}
+                    className="bg-gray-800 rounded-lg"
+                    key={product.id}
+                  >
+                    <img
+                      src={`${import.meta.env.VITE_API_URL}${product.Imagen[0].url}`}
+                      className="size-30 rounded-t-lg object-cover"
+                      alt={product.Nombre || ""}
+                    />
+                    <h3 className="text-white text-md font-Noto text-center py-2">
+                      {product.Nombre || "Nombre indefinido"}
+                    </h3>
+                  </button>
+                ))
+              ) : (
+                <p className="m-auto text-center text-white">
+                  No se encontraron productos.
+                </p>
+              )}
+            </div>
           );
-        })}
-      </div>
+        })()}
+
       <Modal
         isOpen={isModalOpen}
         onClose={handleCloseModal}

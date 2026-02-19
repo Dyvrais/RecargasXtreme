@@ -23,9 +23,9 @@
     "Estado": {
       "type": "enumeration",
       "enum": [
-        "cancelado",
-        "entregado",
-        "pendiente"
+        "PENDIENTE",
+        "ENTREGADO",
+        "CANCELADO"
       ]
     }
   }

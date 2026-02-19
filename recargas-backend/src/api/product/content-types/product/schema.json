@@ -35,6 +35,14 @@
       "relation": "oneToMany",
       "target": "api::opcion.opcion",
       "mappedBy": "product"
+    },
+    "metodoiniciosesion": {
+      "type": "enumeration",
+      "enum": [
+        "Facebook",
+        "Google",
+        "Activision"
+      ]
     }
   }
 }
